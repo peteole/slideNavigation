@@ -1,0 +1,42 @@
+.slideFooter{
+    position: fixed;
+    width:100%;
+    height: 100%;
+    left:0;
+    touch-action: none;
+    z-index: 3;
+}
+body{
+    background-color: antiquewhite;
+}
+.content{
+    background-color: white;
+    overflow-y: auto;
+    position: absolute;
+    transform-origin: 0 0;
+    border-radius: 10px;
+}
+.content>*{
+    margin-left: 10px;
+    margin-right: 10px;
+}
+.p{
+    size: 20;
+}
+.slider{
+    height: 50px;
+    touch-action: none;
+    position: absolute;
+    z-index: 10;
+}
+.slider div{
+    touch-action: none;
+    border-radius: 5px;
+    height: 100%;
+    margin-right:3px;
+    position: static;
+    overflow: hidden;
+}
+.div{
+    transform-origin: 0 0;
+}
