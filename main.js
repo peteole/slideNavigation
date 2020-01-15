@@ -8,7 +8,7 @@ var ySwipe=0;
 var openPage=document.createElement("div");
 var win=document.createElement("div");
 var slideTime=200;
-var distaneWithoutScaling=1/3;
+var distaneWithoutScaling=1/10;
 var winHeight=0;
 var winWidth=0;
 var thumbnailWidth=70;
@@ -99,7 +99,7 @@ function activateNode(current=new NavNode(), addSwiper=true){
         var slider=document.createElement("div");
         var contentContainer=document.createElement("div");
         slider=sw.swipeElement;
-        //var node=new NavNode();
+        var node=new NavNode();
         node=sw.swipeElement.current;
         contentContainer=node.childDiv;
 
@@ -132,7 +132,21 @@ function activateNode(current=new NavNode(), addSwiper=true){
         if(oldChildPos!=sw.swipeElement.current.childPosition){
             //draw new children
             updateSliders(sw.swipeElement.current.level+1);
-        }/*
+        }
+        var l=ySwipe/thumbnailHeight;
+        /*if(l>node.level+distaneWithoutScaling&&l<=node.level+1){
+            if(node.children.length>0){
+                var dist=(sw.currentX+node.children[node.childPosition].childControlDiv.a.currentX)/thumbnailWidth+newPos;
+                var limit=(node.level+1-ySwipe/thumbnailHeight);
+                if(dist>limit){
+                    sw.moveElementWithoutTouch(new Point(-thumbnailWidth*(newPos-limit),sw.currentY),false);
+                }else if(-dist>limit){
+                    sw.moveElementWithoutTouch(new Point(-thumbnailWidth*(newPos+limit),sw.currentY),false);
+                }
+            }
+        }*/
+        
+        /*
         if(node.level<=ySwipe/thumbnailHeight+1&&node.level>=ySwipe/thumbnailHeight){
             var parentControler=node.parent.swipeElement.current;
             parentControler.moveElementWithoutTouch(new Point())
@@ -193,10 +207,29 @@ function updateElementPosition(el=new NavNode()){
     }
     //el.children.forEach((el)=>{if(!el.content.parent){win.appendChild(el.content)}});
     var leftestPoint=0;
-    if(yDif<=0){
+    if(yDif<=-1+distaneWithoutScaling){
+        var scalingFactor=1/el.children.length;
+        var leftestPoint=0;
+        if(el.parent&&el.parent.childControlDiv.a){
+            leftestPoint=el.parent.childControlDiv.a.currentX/thumbnailWidth+el.positionFromParent;
+        }
+        el.children.forEach(function(a){
+            var left=leftestPoint+a.positionFromParent*scalingFactor;
+            if(left<=1&&left>=-1){
+                a.content.style.display = "initial";
+                a.content.style.left=left*winWidth+"px";
+                a.content.style.transform="scale("+scalingFactor+")";
+                a.content.style.top=(yDif+1-scalingFactor)*winHeight+"px";
+            }else{
+                a.content.style.display="none";
+            }
+        });
+
+    }else if(yDif<=0){
         //elements getting smaller
         var zoomFactor=1/el.children.length;
-        var scalingFactor=1-(1-zoomFactor)*(-yDif);
+        var partAtTarget=yDif/(1-distaneWithoutScaling);
+        var scalingFactor=1-(1-zoomFactor)*(-partAtTarget);
         //el.childDiv.style.top=zoomFactor*yDif*win.clientHeight+"px";
         if(el.parent&&el.parent.childControlDiv.a){
             //if not root
@@ -208,12 +241,12 @@ function updateElementPosition(el=new NavNode()){
             if(parZoomFactor==0){
                 parZoomFactor=1;
             }
-            var parentZoom=1+(parZoomFactor-1)*(yDif+1);
+            var parentZoom=1+(parZoomFactor-1)*(yDif+1-distaneWithoutScaling)/(1-distaneWithoutScaling);
             var parentLeft=(el.parent.childControlDiv.a.currentX/thumbnailWidth+el.positionFromParent)*parentZoom;
-            leftestPoint=swipeX*(1+yDif)+parentLeft;
+            leftestPoint=swipeX*(1+partAtTarget)+parentLeft;
             //el.childDiv.style.left=win.clientWidth*(swipeX*(1+yDif)+parentLeft)+"px";
         }else{
-            leftestPoint=swipeX*(1-1*(-yDif));
+            leftestPoint=swipeX*(1-1*(-partAtTarget));
             //el.childDiv.style.left=win.clientWidth*swipeX*(1-1*(-yDif))+"px";
         }
         if(leftestPoint>1||leftestPoint<-el.children.length*scalingFactor){
@@ -225,27 +258,46 @@ function updateElementPosition(el=new NavNode()){
                     a.content.style.display = "initial";
                     a.content.style.left=left*winWidth+"px";
                     a.content.style.transform="scale("+scalingFactor+")";
-                    a.content.style.top=zoomFactor*yDif*winHeight+"px";
+                    a.content.style.top=((distaneWithoutScaling-1/el.children.length)*(-partAtTarget))*winHeight+"px";
                 }else{
                     a.content.style.display="none";
                 }
-            })
+            });
         }
         //el.childDiv.style.transform="scale("+scalingFactor+")";// translateY("+zoomFactor*yDif*win.clientHeight+"px)";
+    }else if(yDif<=distaneWithoutScaling){
+        var leftest=swipeX;
+        if(el.parent&&el.parent.children[el.parent.childPosition]!=el){
+            leftest=2;//return
+        }
+        el.children.forEach(function(a){
+            var left=leftest+a.positionFromParent;
+            if(left<=1&&left>=-1){
+                a.content.style.display = "initial";
+                a.content.style.left=left*winWidth+"px";
+                a.content.style.transform="scale("+1+")";
+                a.content.style.top=yDif*winHeight+"px";
+            }else{
+                a.content.style.display="none";
+            }
+        });
+
     }else{
         //elements getting bigger
         var zoomFactor=0;
+        var partAtTarget=(yDif-distaneWithoutScaling)/(1-distaneWithoutScaling);
         if(isValidIndex(el.childPosition,el.children)){
             zoomFactor=el.children[el.childPosition].children.length;
         }
         if(zoomFactor==0){
             zoomFactor=1;
         }
-        var scalingFactor=1+(zoomFactor-1)*yDif;
+        var scalingFactor=1+(zoomFactor-1)*partAtTarget;
         //el.childDiv.style.top=yDif*win.clientHeight+"px";
         if(el.children[el.childPosition]){
             var childrenSwipeControler=el.children[el.childPosition].childControlDiv.a;
-            var childLeft=childrenSwipeControler.currentX/thumbnailWidth*(1+yDif-1);
+            //var childLeft=childrenSwipeControler.currentX/thumbnailWidth*(1+yDif-1)/(1-distaneWithoutScaling);
+            var childLeft=childrenSwipeControler.currentX/thumbnailWidth*(1-1*(-(yDif-1)/(1-distaneWithoutScaling)));
             //el.childDiv.style.left=winWidth*(swipeX*(1+(zoomFactor-1)*yDif))+"px";
             //el.childDiv.style.left=winWidth*(swipeX*scalingFactor+childLeft)+"px";
             leftestPoint=swipeX*scalingFactor+childLeft;
@@ -254,6 +306,9 @@ function updateElementPosition(el=new NavNode()){
             leftestPoint=swipeX*scalingFactor;
         }
         //el.childDiv.style.transform="scale("+scalingFactor+")";
+        if(el.parent&&el.parent.children[el.parent.childPosition]!=el){
+            leftestPoint=2;//return
+        }
 
         if(leftestPoint>1||leftestPoint<-el.children.length*scalingFactor){
             el.children.forEach((a)=>a.content.style.display = "none");
@@ -337,8 +392,11 @@ class NavNode {
         this.positionFromParent=0;
         if (parent) {
             this.positionFromParent=parent.children.length;
+            //thumbnail.current=this;
             parent.children.push(this);
-
+            thumbnail.onclick=function(ev){
+                //this.parent.childControlDiv.a.slideToPoint(new Point(-this.positionFromParent*thumbnailWidth,(this.level-1)*thumbnailHeight),200);
+            }.bind(this);
             this.childControlDiv.style.left=(this.parent.positionFromParent * window.innerWidth) + 'px';
             if(this.thumbnail.style){
                 this.thumbnail.style.position = 'absolute';
