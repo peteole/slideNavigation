@@ -1,5 +1,5 @@
 # slideNavigation
-js library for interactive slide navigation on hirarchical websites. To try it yourself, see the following example taken from https://en.wikipedia.org/wiki/Tree:
+js library for interactive gesture-based navigation on hirarchical websites. To try it yourself, see the following example taken from https://en.wikipedia.org/wiki/Tree:
 
 https://peteole.github.io/slideNavigation/wikipediaTreeExample.html
 
