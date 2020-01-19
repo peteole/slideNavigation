@@ -48,9 +48,9 @@ window.onload =
         this.readDocument();
         this.footer.setAttribute("class","slideFooter");
         this.footer.style.top="100%";//window.innerHeight-50+"px";
+        this.document.body.appendChild(this.upButton);
         this.document.body.appendChild(this.footer);
         this.document.body.appendChild(this.win);
-        this.document.body.appendChild(this.upButton);
         for (var i = root; i.children[i.childPosition] != null;
             i = i.children[i.childPosition]) {
             this.currentDepth++;
