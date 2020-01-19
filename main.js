@@ -7,7 +7,11 @@ var currentOpenDepth=0;
 var ySwipe=0;
 var openPage=document.createElement("div");
 var win=document.createElement("div");
-var slideTime=200;
+var upButton=document.createElement("div");
+var slideTime=300;
+var distaneWithoutScaling=1/10;
+var winHeight=0;
+var winWidth=0;
 var thumbnailWidth=70;
 var thumbnailHeight=60;
 var gap=7;
@@ -20,14 +24,33 @@ window.onload =
         this.win.style.width="100%";
         this.win.style.position="absolute";
         this.win.style.overflow="hidden";
-        this.win.style.left="0px";
-        this.win.style.top="0px";
+        this.win.style.left=0+"px";
+        this.win.style.top=0+"px";
+        this.winHeight=window.innerHeight-this.thumbnailHeight;
+        this.winWidth=window.innerWidth;
+        this.upButton.style.position="absolute";
+        this.upButton.style.width=this.thumbnailWidth+"px";
+        this.upButton.style.height=this.thumbnailHeight+"px";
+        this.upButton.style.backgroundColor="white";
+        this.upButton.style.top=this.winHeight+"px";
+        this.upButton.innerHTML="&#709";
+        this.upButton.style.textAlign="center";
+        this.upButton.style.fontSize=this.thumbnailHeight+"px";
+        this.upButton.style.borderRadius="5px";
+        this.upButton.style.zIndex=10;
+        this.upButton.onclick=function(ev){
+            if(ySwipe>0&&!this.root.childControlDiv.a.sliding){
+                this.root.childControlDiv.a.moveElementYWithoutTouch(ySwipe,false);
+                this.root.childControlDiv.a.slideToPoint(new Point(this.root.childControlDiv.a.currentX,ySwipe-thumbnailHeight),slideTime);
+            }
+        }.bind(this);
         this.root = new NavNode(null);
         this.readDocument();
         this.footer.setAttribute("class","slideFooter");
         this.footer.style.top="100%";//window.innerHeight-50+"px";
         this.document.body.appendChild(this.footer);
         this.document.body.appendChild(this.win);
+        this.document.body.appendChild(this.upButton);
         for (var i = root; i.children[i.childPosition] != null;
             i = i.children[i.childPosition]) {
             this.currentDepth++;
@@ -47,7 +70,7 @@ function updateSliders(minLevelToUpdate=0) {
         }
     }
     var depth = 0;
-    var current=new NavNode();
+    //var current=new NavNode();
     current = root;
     for (var i = root; i.children[i.childPosition] != null;
         i = i.children[i.childPosition]) {
@@ -94,7 +117,7 @@ function activateNode(current=new NavNode(), addSwiper=true){
         var slider=document.createElement("div");
         var contentContainer=document.createElement("div");
         slider=sw.swipeElement;
-        var node=new NavNode();
+        //var node=new NavNode();
         node=sw.swipeElement.current;
         contentContainer=node.childDiv;
 
@@ -127,7 +150,22 @@ function activateNode(current=new NavNode(), addSwiper=true){
         if(oldChildPos!=sw.swipeElement.current.childPosition){
             //draw new children
             updateSliders(sw.swipeElement.current.level+1);
-        }/*
+        }
+        var l=ySwipe/thumbnailHeight;
+        /*if(l>node.level+distaneWithoutScaling&&l<=node.level+1){
+            if(node.children.length>0){
+                //var dist=(sw.currentX+node.children[node.childPosition].childControlDiv.a.currentX)/thumbnailWidth+newPos;
+                var dist=(sw.currentX)/thumbnailWidth+newPos;
+                var limit=(node.level+1-ySwipe/thumbnailHeight);
+                if(dist>limit){
+                    sw.moveElementWithoutTouch(new Point(-thumbnailWidth*(newPos-limit),sw.currentY),false);
+                }else if(-dist>limit){
+                    sw.moveElementWithoutTouch(new Point(-thumbnailWidth*(newPos+limit),sw.currentY),false);
+                }
+            }
+        }*/
+        
+        /*
         if(node.level<=ySwipe/thumbnailHeight+1&&node.level>=ySwipe/thumbnailHeight){
             var parentControler=node.parent.swipeElement.current;
             parentControler.moveElementWithoutTouch(new Point())
@@ -136,6 +174,24 @@ function activateNode(current=new NavNode(), addSwiper=true){
 
     }.bind(this);
     a.onMoveEnd=function(sw,p){
+        if(distance(sw.initialTouchPos,sw.lastTouchPos)<10&&sw.getTimeMoving()<200){
+            console.log("click");
+            var below=document.elementsFromPoint(sw.lastTouchPos.x,sw.lastTouchPos.y);
+            var swipeElController;
+            var swipeNode;
+            for( var el of below){
+                if(el.navNode){
+                    swipeElController=el.parentElement.a;
+                    swipeNode=el.navNode;
+                    break;
+                }
+            }
+            if(swipeElController){
+                swipeElController.moveElementYWithoutTouch(ySwipe,false);
+                swipeElController.slideToPoint(new Point(-swipeNode.positionFromParent*thumbnailWidth,(swipeNode.level-1)*thumbnailHeight),slideTime);
+                return;
+            }
+        }
         var posX=Math.round(-sw.currentX/thumbnailWidth);
         var toAdd=sw.swipeElement;
         var max=toAdd.current.children.length;
@@ -168,7 +224,7 @@ function activateNode(current=new NavNode(), addSwiper=true){
 }
 function updateElementPositions(){
     var newElements=getSurroundingElements(getOpenElement());
-    drawnContents.forEach((el)=>{if(!newElements.has(el)&&win.contains(el.childDiv)){win.removeChild(el.childDiv)}});
+    drawnContents.forEach((el)=>{if(!newElements.has(el)){el.childDiv.style.display="none"}});
     //newElements.forEach((el)=>{drawnContents.add(el)});
     newElements.forEach((el)=>updateElementPosition(el));
     drawnContents=newElements;
@@ -183,19 +239,40 @@ function updateElementPosition(el=new NavNode()){
     var elYPos=el.level;
     var yDif=swipeY-elYPos;
     if(Math.abs(yDif)>1){
-        el.children.forEach((el)=>el.style.visibility = "hidden");
+        el.children.forEach((el)=>el.content.style.display = "none");
         return;
     }
-    el.children.forEach((el)=>{if(!el.content.parent){win.appendChild(el.content)}});
-    if(!el.childDiv.parent){
-        //win.appendChild(el.childDiv);
-    }
+    //el.children.forEach((el)=>{if(!el.content.parent){win.appendChild(el.content)}});
     var leftestPoint=0;
-    if(yDif<=0){
+    if(yDif<=-1+distaneWithoutScaling){
+        var scalingFactor=1/el.children.length;
+        var leftestPoint=0;
+        if(el.parent&&el.parent.childControlDiv.a){
+            leftestPoint=el.parent.childControlDiv.a.currentX/thumbnailWidth+el.positionFromParent;
+        }
+        el.children.forEach(function(a){
+            var left=leftestPoint+a.positionFromParent*scalingFactor;
+            if(left<=1&&left>=-1){
+                a.content.style.display = "initial";
+                a.content.style.left=gap*scalingFactor/2+left*winWidth+"px";
+                a.content.style.transform="scale("+scalingFactor+")";
+                a.content.style.top=gap*scalingFactor/2+(yDif+1-scalingFactor)*winHeight+"px";
+            }else{
+                a.content.style.display="none";
+            }
+        });
+
+    }else if(yDif<=0){
         //elements getting smaller
+        if(el.children.length==0){
+            return;
+        }
         var zoomFactor=1/el.children.length;
-        var scalingFactor=1-(1-zoomFactor)*(-yDif);
-        el.childDiv.style.top=zoomFactor*yDif*win.clientHeight+"px";
+        var partAtTarget=yDif/(1-distaneWithoutScaling);
+        var scalingFactor=1-(1-zoomFactor)*(-partAtTarget);
+        var xScalingFactor=scalingFactor;
+        var selected=false;
+        //el.childDiv.style.top=zoomFactor*yDif*win.clientHeight+"px";
         if(el.parent&&el.parent.childControlDiv.a){
             //if not root
             //el.childDiv.style.left=win.clientWidth*(swipeX*(1-1*(-yDif))+(el.positionFromParent+el.parent.childControlDiv.a.currentX/thumbnailWidth))+"px";
@@ -206,40 +283,100 @@ function updateElementPosition(el=new NavNode()){
             if(parZoomFactor==0){
                 parZoomFactor=1;
             }
-            var parentZoom=1+(parZoomFactor-1)*(yDif+1);
+            var parentZoom=1+(parZoomFactor-1)*(yDif+1-distaneWithoutScaling)/(1-distaneWithoutScaling);
             var parentLeft=(el.parent.childControlDiv.a.currentX/thumbnailWidth+el.positionFromParent)*parentZoom;
-            leftestPoint=swipeX*(1+yDif)+parentLeft;
+            if(el.parent.childPosition==el.positionFromParent){
+                selected=true;
+                leftestPoint=swipeX*(1+partAtTarget)+parentLeft;
+            }else{
+                leftestPoint=parentLeft;
+                xScalingFactor=parentZoom/el.children.length;
+            }
             //el.childDiv.style.left=win.clientWidth*(swipeX*(1+yDif)+parentLeft)+"px";
         }else{
-            leftestPoint=swipeX*(1-1*(-yDif));
+            leftestPoint=swipeX*(1-1*(-partAtTarget));
             //el.childDiv.style.left=win.clientWidth*swipeX*(1-1*(-yDif))+"px";
         }
         if(leftestPoint>1||leftestPoint<-el.children.length*scalingFactor){
-            el.children.forEach((el)=>el.content.style.visibility = "hidden");
+            el.children.forEach((a)=>a.content.style.display = "none");
         }else{
-
+            el.children.forEach(function(a){
+                var left=leftestPoint+a.positionFromParent*xScalingFactor;
+                if(left<=1&&left>=-xScalingFactor){
+                    a.content.style.display = "initial";
+                    a.content.style.left=gap*xScalingFactor/2+left*winWidth+"px";
+                    a.content.style.transform="scale("+xScalingFactor+")";
+                    if(selected){
+                        a.content.style.top=gap*scalingFactor/2+((distaneWithoutScaling-1/el.children.length)*(-partAtTarget))*winHeight+"px";
+                    }else{
+                        a.content.style.top=gap*scalingFactor/2+((distaneWithoutScaling-xScalingFactor)*(-partAtTarget))*winHeight+"px";
+                    }
+                }else{
+                    a.content.style.display="none";
+                }
+            });
         }
-        el.childDiv.style.transform="scale("+scalingFactor+")";// translateY("+zoomFactor*yDif*win.clientHeight+"px)";
+        //el.childDiv.style.transform="scale("+scalingFactor+")";// translateY("+zoomFactor*yDif*win.clientHeight+"px)";
+    }else if(yDif<=distaneWithoutScaling){
+        var leftest=swipeX;
+        if(el.parent&&el.parent.children[el.parent.childPosition]!=el){
+            leftest=2;//return
+        }
+        el.children.forEach(function(a){
+            var left=leftest+a.positionFromParent;
+            if(left<=1&&left>=-1){
+                a.content.style.display = "initial";
+                a.content.style.left=gap/2+left*winWidth+"px";
+                a.content.style.transform="scale("+1+")";
+                a.content.style.top=gap/2+yDif*winHeight+"px";
+            }else{
+                a.content.style.display="none";
+            }
+        });
+
     }else{
         //elements getting bigger
         var zoomFactor=0;
+        var partAtTarget=(yDif-distaneWithoutScaling)/(1-distaneWithoutScaling);
         if(isValidIndex(el.childPosition,el.children)){
             zoomFactor=el.children[el.childPosition].children.length;
         }
         if(zoomFactor==0){
             zoomFactor=1;
         }
-        var scalingFactor=1+(zoomFactor-1)*yDif;
-        el.childDiv.style.top=yDif*win.clientHeight+"px";
+        var scalingFactor=1+(zoomFactor-1)*partAtTarget;
+        //el.childDiv.style.top=yDif*win.clientHeight+"px";
         if(el.children[el.childPosition]){
             var childrenSwipeControler=el.children[el.childPosition].childControlDiv.a;
-            var childLeft=childrenSwipeControler.currentX/thumbnailWidth*(1+yDif-1);
-            //el.childDiv.style.left=win.clientWidth*(swipeX*(1+(zoomFactor-1)*yDif))+"px";
-            el.childDiv.style.left=win.clientWidth*(swipeX*scalingFactor+childLeft)+"px";
+            //var childLeft=childrenSwipeControler.currentX/thumbnailWidth*(1+yDif-1)/(1-distaneWithoutScaling);
+            var childLeft=childrenSwipeControler.currentX/thumbnailWidth*(1-1*(-(yDif-1)/(1-distaneWithoutScaling)));
+            //el.childDiv.style.left=winWidth*(swipeX*(1+(zoomFactor-1)*yDif))+"px";
+            //el.childDiv.style.left=winWidth*(swipeX*scalingFactor+childLeft)+"px";
+            leftestPoint=swipeX*scalingFactor+childLeft;
         }else{
-            el.childDiv.style.left=win.clientWidth*swipeX*scalingFactor+"px";
+            //el.childDiv.style.left=win.clientWidth*swipeX*scalingFactor+"px";
+            leftestPoint=swipeX*scalingFactor;
         }
-        el.childDiv.style.transform="scale("+scalingFactor+")";
+        //el.childDiv.style.transform="scale("+scalingFactor+")";
+        if(el.parent&&el.parent.children[el.parent.childPosition]!=el){
+            leftestPoint=2;//return
+        }
+
+        if(leftestPoint>1||leftestPoint<-el.children.length*scalingFactor){
+            el.children.forEach((a)=>a.content.style.display = "none");
+        }else{
+            el.children.forEach(function(a){
+                var left=leftestPoint+a.positionFromParent*scalingFactor;
+                if(left<=1&&left>=-scalingFactor){
+                    a.content.style.top=gap*scalingFactor/2+yDif*winHeight+"px";
+                    a.content.style.display = "initial";
+                    a.content.style.left=gap*scalingFactor/2+left*winWidth+"px";
+                    a.content.style.transform="scale("+scalingFactor+")";
+                }else{
+                    a.content.style.display="none";
+                }
+            })
+        }
     }
 }
 
@@ -289,10 +426,15 @@ class NavNode {
         this.content = content;
         content.style.width=window.innerWidth-gap+"px";
         content.style.height=window.innerHeight-thumbnailHeight-gap+"px";
-        content.style.backgroundColor="rgb(230,230,230)";
+        content.setAttribute("class","content");
+        /*content.style.backgroundColor="rgb(230,230,230)";
         content.style.overflowY="auto";
         content.style.position="absolute";
+        content.style.transformOrigin="0 0";*/
+        content.style.display="none";
+        win.appendChild(content);
         this.thumbnail = thumbnail;
+        this.thumbnail.navNode=this;
         this.children = [];
         this.childDiv=document.createElement("div");
         this.childDiv.style.position="absolute";
@@ -304,8 +446,8 @@ class NavNode {
         this.positionFromParent=0;
         if (parent) {
             this.positionFromParent=parent.children.length;
+            //thumbnail.current=this;
             parent.children.push(this);
-
             this.childControlDiv.style.left=(this.parent.positionFromParent * window.innerWidth) + 'px';
             if(this.thumbnail.style){
                 this.thumbnail.style.position = 'absolute';
@@ -341,7 +483,6 @@ function removeChildren(n=document.createElement("div")){
     }
 }
 function getOpenElement(){
-    var el=new NavNode();
     el=root;
     while(el.level<currentOpenDepth){
         el=el.children[el.childPosition];
@@ -365,7 +506,7 @@ function getSurroundingElements(el=new NavNode, maxWay=2){
         }
     }
     el.children.forEach((child)=>{newSets.push(getSurroundingElements(child,maxWay-1))});
-    var toReturn=new Set([]);
+    var toReturn=new Set([el]);
     for(var set of newSets){
         set.forEach((el)=>toReturn.add(el));
     }
