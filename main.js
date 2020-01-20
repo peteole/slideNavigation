@@ -192,7 +192,7 @@ function activateNode(current=new NavNode(), addSwiper=true){
                 return;
             }
         }
-        var posX=Math.round(-sw.currentX/thumbnailWidth);
+        var posX=Math.round(-(sw.currentX+sw.currentVX*slideTime/4)/thumbnailWidth);
         var toAdd=sw.swipeElement;
         var max=toAdd.current.children.length;
         if(posX<0){
@@ -200,7 +200,7 @@ function activateNode(current=new NavNode(), addSwiper=true){
         }else if(posX>=max){
             posX=max-1;
         }
-        var posY=Math.round(sw.currentY/thumbnailHeight);
+        var posY=Math.round((sw.currentY)/thumbnailHeight);
         max=currentDepth;
         if(posY<0){
             posY=0;
@@ -212,7 +212,7 @@ function activateNode(current=new NavNode(), addSwiper=true){
         toAdd.style.transitionDuration="0.0s";
         //sw.moveElementWithoutTouch(new Point(-pos*thumbnailHeight,0));
         toAdd.current.childPosition=posX;
-        sw.slideToPoint(new Point(-posX*thumbnailWidth,currentOpenDepth*thumbnailHeight),slideTime);
+        sw.breakToPoint(new Point(-posX*thumbnailWidth,currentOpenDepth*thumbnailHeight),slideTime);
         footerY=currentOpenDepth*thumbnailHeight;
         toAdd.style.transitionDuration=oldTrans;
         
