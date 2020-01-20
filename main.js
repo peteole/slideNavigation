@@ -346,7 +346,7 @@ function updateElementPosition(el=new NavNode()){
         }
         var scalingFactor=1+(zoomFactor-1)*partAtTarget;
         //el.childDiv.style.top=yDif*win.clientHeight+"px";
-        if(el.children[el.childPosition]){
+        if(el.children[el.childPosition]&&el.children[el.childPosition].childControlDiv.a){
             var childrenSwipeControler=el.children[el.childPosition].childControlDiv.a;
             //var childLeft=childrenSwipeControler.currentX/thumbnailWidth*(1+yDif-1)/(1-distaneWithoutScaling);
             var childLeft=childrenSwipeControler.currentX/thumbnailWidth*(1-1*(-(yDif-1)/(1-distaneWithoutScaling)));
